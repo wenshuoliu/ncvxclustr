@@ -1,8 +1,3 @@
-# For R
-.Rhistory
-.Rdata
-.Rproj.user
-
 # Compiled Object files
 *.slo
 *.lo

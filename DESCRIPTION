@@ -1,0 +1,15 @@
+Package: ncvxclustr
+Title: None-Convex Clustering Algorithm
+Version: 0.0.0.9000
+Authors@R: c(person("Wenshuo", "Liu", email = "wenshuoliu@gmail.com", role = c("aut", "cre")), 
+              person("Eric", "Chi", email = "eric_chi@ncsu.edu", role = c("aut")))
+Description: Iterative algorithm to solve the clustering problem by non-convex penalizations
+Depends: R (>= 3.3.2)
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+LinkingTo: Rcpp, 
+    RcppEigen
+Imports: Rcpp,
+    RcppEigen
+RoxygenNote: 6.0.1
