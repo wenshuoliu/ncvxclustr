@@ -11,5 +11,6 @@ LazyData: true
 LinkingTo: Rcpp, 
     RcppEigen
 Imports: Rcpp,
-    RcppEigen
+    RcppEigen,
+    Matrix
 RoxygenNote: 6.0.1
