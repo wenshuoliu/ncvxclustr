@@ -2,10 +2,19 @@
 % Please edit documentation in R/RcppExports.R
 \name{weights_init}
 \alias{weights_init}
-\title{Calculate the Gaussian Kernel weights}
+\title{From the results of the RANN package, calculate the edge indices, the corresponding distances,
+  and the edge incidence matrix Phi}
 \usage{
 weights_init(idx, dist)
 }
+\arguments{
+\item{idx, dist}{the output of RANN::nn2()}
+}
+\value{
+a list consist of: a 2*nEdges (# of edges) matrix of indices of edges; a nEdges-vector
+  dists of the corresponding distances; a nEdges*n edge incidence matrix Phi
+}
 \description{
-Calculate the Gaussian Kernel weights
+From the results of the RANN package, calculate the edge indices, the corresponding distances,
+  and the edge incidence matrix Phi
 }

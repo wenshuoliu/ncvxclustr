@@ -19,3 +19,68 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// obj_dual
+double obj_dual(const double XF2, const MatrixXd& U);
+RcppExport SEXP ncvxclustr_obj_dual(SEXP XF2SEXP, SEXP USEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const double >::type XF2(XF2SEXP);
+    Rcpp::traits::input_parameter< const MatrixXd& >::type U(USEXP);
+    rcpp_result_gen = Rcpp::wrap(obj_dual(XF2, U));
+    return rcpp_result_gen;
+END_RCPP
+}
+// obj_primal
+double obj_primal(const MatrixXd& Delta, const MatrixXd& V, const VectorXd& weights);
+RcppExport SEXP ncvxclustr_obj_primal(SEXP DeltaSEXP, SEXP VSEXP, SEXP weightsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const MatrixXd& >::type Delta(DeltaSEXP);
+    Rcpp::traits::input_parameter< const MatrixXd& >::type V(VSEXP);
+    Rcpp::traits::input_parameter< const VectorXd& >::type weights(weightsSEXP);
+    rcpp_result_gen = Rcpp::wrap(obj_primal(Delta, V, weights));
+    return rcpp_result_gen;
+END_RCPP
+}
+// proj_l2_acc
+MatrixXd proj_l2_acc(const MatrixXd& Lambda, const VectorXd& radii);
+RcppExport SEXP ncvxclustr_proj_l2_acc(SEXP LambdaSEXP, SEXP radiiSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const MatrixXd& >::type Lambda(LambdaSEXP);
+    Rcpp::traits::input_parameter< const VectorXd& >::type radii(radiiSEXP);
+    rcpp_result_gen = Rcpp::wrap(proj_l2_acc(Lambda, radii));
+    return rcpp_result_gen;
+END_RCPP
+}
+// mutate
+void mutate(NumericMatrix& M);
+RcppExport SEXP ncvxclustr_mutate(SEXP MSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericMatrix& >::type M(MSEXP);
+    mutate(M);
+    return R_NilValue;
+END_RCPP
+}
+// dual_ascent
+List dual_ascent(const MatrixXd& X, const SpMat& Phi, const VectorXd& weights, const MatrixXd Lambda0, int maxiter, double eps, double nv, bool trace);
+RcppExport SEXP ncvxclustr_dual_ascent(SEXP XSEXP, SEXP PhiSEXP, SEXP weightsSEXP, SEXP Lambda0SEXP, SEXP maxiterSEXP, SEXP epsSEXP, SEXP nvSEXP, SEXP traceSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const MatrixXd& >::type X(XSEXP);
+    Rcpp::traits::input_parameter< const SpMat& >::type Phi(PhiSEXP);
+    Rcpp::traits::input_parameter< const VectorXd& >::type weights(weightsSEXP);
+    Rcpp::traits::input_parameter< const MatrixXd >::type Lambda0(Lambda0SEXP);
+    Rcpp::traits::input_parameter< int >::type maxiter(maxiterSEXP);
+    Rcpp::traits::input_parameter< double >::type eps(epsSEXP);
+    Rcpp::traits::input_parameter< double >::type nv(nvSEXP);
+    Rcpp::traits::input_parameter< bool >::type trace(traceSEXP);
+    rcpp_result_gen = Rcpp::wrap(dual_ascent(X, Phi, weights, Lambda0, maxiter, eps, nv, trace));
+    return rcpp_result_gen;
+END_RCPP
+}
