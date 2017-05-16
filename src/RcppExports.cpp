@@ -56,16 +56,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// mutate
-void mutate(NumericMatrix& M);
-RcppExport SEXP ncvxclustr_mutate(SEXP MSEXP) {
-BEGIN_RCPP
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< NumericMatrix& >::type M(MSEXP);
-    mutate(M);
-    return R_NilValue;
-END_RCPP
-}
 // dual_ascent
 List dual_ascent(const MatrixXd& X, const SpMat& Phi, const VectorXd& weights, const MatrixXd Lambda0, int maxiter, double eps, double nv, bool trace);
 RcppExport SEXP ncvxclustr_dual_ascent(SEXP XSEXP, SEXP PhiSEXP, SEXP weightsSEXP, SEXP Lambda0SEXP, SEXP maxiterSEXP, SEXP epsSEXP, SEXP nvSEXP, SEXP traceSEXP) {
@@ -81,6 +71,24 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< double >::type nv(nvSEXP);
     Rcpp::traits::input_parameter< bool >::type trace(traceSEXP);
     rcpp_result_gen = Rcpp::wrap(dual_ascent(X, Phi, weights, Lambda0, maxiter, eps, nv, trace));
+    return rcpp_result_gen;
+END_RCPP
+}
+// dual_ascent_adapt
+List dual_ascent_adapt(const MatrixXd& X, const SpMat& Phi, const VectorXd& weights, const MatrixXd Lambda0, int maxiter, double eps, double nv0, bool trace);
+RcppExport SEXP ncvxclustr_dual_ascent_adapt(SEXP XSEXP, SEXP PhiSEXP, SEXP weightsSEXP, SEXP Lambda0SEXP, SEXP maxiterSEXP, SEXP epsSEXP, SEXP nv0SEXP, SEXP traceSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const MatrixXd& >::type X(XSEXP);
+    Rcpp::traits::input_parameter< const SpMat& >::type Phi(PhiSEXP);
+    Rcpp::traits::input_parameter< const VectorXd& >::type weights(weightsSEXP);
+    Rcpp::traits::input_parameter< const MatrixXd >::type Lambda0(Lambda0SEXP);
+    Rcpp::traits::input_parameter< int >::type maxiter(maxiterSEXP);
+    Rcpp::traits::input_parameter< double >::type eps(epsSEXP);
+    Rcpp::traits::input_parameter< double >::type nv0(nv0SEXP);
+    Rcpp::traits::input_parameter< bool >::type trace(traceSEXP);
+    rcpp_result_gen = Rcpp::wrap(dual_ascent_adapt(X, Phi, weights, Lambda0, maxiter, eps, nv0, trace));
     return rcpp_result_gen;
 END_RCPP
 }

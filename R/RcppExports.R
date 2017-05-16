@@ -26,10 +26,6 @@ proj_l2_acc <- function(Lambda, radii) {
     .Call('ncvxclustr_proj_l2_acc', PACKAGE = 'ncvxclustr', Lambda, radii)
 }
 
-mutate <- function(M) {
-    invisible(.Call('ncvxclustr_mutate', PACKAGE = 'ncvxclustr', M))
-}
-
 #'Sovle the projected dual ascent problem with fixed weights
 #'
 #'@param X the data, with the columns being units, the rows being features
@@ -46,5 +42,23 @@ mutate <- function(M) {
 #'@export
 dual_ascent <- function(X, Phi, weights, Lambda0, maxiter, eps, nv, trace) {
     .Call('ncvxclustr_dual_ascent', PACKAGE = 'ncvxclustr', X, Phi, weights, Lambda0, maxiter, eps, nv, trace)
+}
+
+#'Solve the projected dual ascent problem with fixed weights and adaptive step size
+#'
+#'@param X the data, with the columns being units, the rows being features
+#'@param Phi the edge incidence matrix, defined as Phi_{li} = 1 if(l_1 == i); -1 if(l_2 == i); 0 otherwise
+#'@param weights the non-zero weights in a vector
+#'@param Lambda0 the initial guess of Lambda
+#'@param maxiter maximum iterations
+#'@param eps the duality gap tolerence
+#'@param nv initial step size
+#'@param trace whether save the primal and dual values of every iteration
+#'
+#'@return a list including U, V, Lambda and number of iterations to convergence
+#'
+#'@export
+dual_ascent_adapt <- function(X, Phi, weights, Lambda0, maxiter, eps, nv0, trace) {
+    .Call('ncvxclustr_dual_ascent_adapt', PACKAGE = 'ncvxclustr', X, Phi, weights, Lambda0, maxiter, eps, nv0, trace)
 }
 

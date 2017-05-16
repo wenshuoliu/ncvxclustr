@@ -146,7 +146,7 @@ MatrixXd proj_l2_acc(const MatrixXd & Lambda, const VectorXd & radii){
 //test for mutator
 //Conclusion: only the standard types from R (NumericMatrix, NumericVector, etc.) are mutable. To use
 //  the eigen functionalities, one needs to use the Map<> template.
-//[[Rcpp::export]]
+///[[Rcpp::export]]
 void mutate(NumericMatrix & M){
   int ncol = M.cols();
   int nrow = M.rows();
@@ -182,6 +182,9 @@ List dual_ascent(const MatrixXd & X, const SpMat & Phi, const VectorXd & weights
   MatrixXd Lambda = Lambda0;
   MatrixXd grad(Lambda0.cols(), Lambda0.rows()); //initialize gradient of Lambda with its dimension
   int it = 0;
+  VectorXd primal_trace(maxiter);
+  VectorXd dual_trace(maxiter);
+
   while((primal - dual) > eps && it < maxiter){
     grad = -V;
     Lambda += nv*grad; //gradient ascent
@@ -192,17 +195,115 @@ List dual_ascent(const MatrixXd & X, const SpMat & Phi, const VectorXd & weights
     V = U*Phi.transpose();
     primal = obj_primal(Delta, V, weights);
     dual = obj_dual(XF2, U);
-    it += 1;
     if(trace){
-      Rcout<<"iteration"<<it<<":"<<std::endl;
-      Rcout<<"primal: "<<primal<<", "<<"dual: "<<dual<<", "<<"gap: "<<(primal - dual)<<std::endl;
+      primal_trace(it) = primal;
+      dual_trace(it) = dual;
     }
+    it += 1;
   }
   if(it == maxiter) {
     Rcout<<"Projected dual ascent doesn't converge! Try increase maxiter."<<std::endl;
     Rcout<<"Duality gap residual: "<<(primal - dual)<<std::endl;
   }else{
     Rcout<<"Projected dual ascent converged at iteration "<<it<<std::endl;
+    if(trace){
+      primal_trace.conservativeResize(it);
+      dual_trace.conservativeResize(it);
+    }
   }
-  return List::create(Named("U") = U, Named("V") = V, Named("Lambda") = Lambda, Named("iter") = it);
+  if(trace) return List::create(Named("U") = U, Named("V") = V, Named("Lambda") = Lambda,
+     Named("primal_trace") = primal_trace, Named("dual_trace") = dual_trace);
+  else return List::create(Named("U") = U, Named("V") = V, Named("Lambda") = Lambda);
+}
+
+//test for matrix inner product
+//Conclusion: there's no cognizable difference between treating the matrices as vectors, and trace(M2^T*M1)
+///[[Rcpp::export]]
+double matrix_inner(const MatrixXd & M1, const MatrixXd & M2, bool vec){
+  if(vec){
+    const double * p1 = & M1(0, 0);
+    const double * p2 = & M2(0, 0);
+    Eigen::Map<const VectorXd> v1(p1, M1.size());
+    Eigen::Map<const VectorXd> v2(p2, M2.size());
+    return v1.dot(v2);
+  }else{
+    return (M2.transpose()*M1).trace();
+  }
+}
+
+//'Solve the projected dual ascent problem with fixed weights and adaptive step size
+//'
+//'@param X the data, with the columns being units, the rows being features
+//'@param Phi the edge incidence matrix, defined as Phi_{li} = 1 if(l_1 == i); -1 if(l_2 == i); 0 otherwise
+//'@param weights the non-zero weights in a vector
+//'@param Lambda0 the initial guess of Lambda
+//'@param maxiter maximum iterations
+//'@param eps the duality gap tolerence
+//'@param nv initial step size
+//'@param trace whether save the primal and dual values of every iteration
+//'
+//'@return a list including U, V, Lambda and number of iterations to convergence
+//'
+//'@export
+//[[Rcpp::export]]
+List dual_ascent_adapt(const MatrixXd & X, const SpMat & Phi, const VectorXd & weights,
+                 const MatrixXd Lambda0, int maxiter, double eps, double nv0,
+                 bool trace){
+  double XF2 = X.squaredNorm(); //avoid repeatedly doing this calculation
+  MatrixXd Delta = Lambda0*Phi;
+  MatrixXd U = X + Delta;
+  MatrixXd V = U*Phi.transpose();
+  double dual = obj_dual(XF2, U);
+  double primal = obj_primal(Delta, V, weights);
+  MatrixXd Lambda(Lambda0.cols(), Lambda0.rows());
+  //MatrixXd grad(Lambda0.cols(), Lambda0.rows()); //initialize gradient of Lambda with its dimension
+  MatrixXd old_Lambda = Lambda0;
+  MatrixXd old_grad = -V; //initialize two variable to track the last iteration
+  int it = 0;
+  VectorXd primal_trace(maxiter);
+  VectorXd dual_trace(maxiter);
+  double nv = nv0;
+
+  while((primal - dual) > eps && it < maxiter){
+    Lambda = old_Lambda + nv*old_grad; //gradient ascent
+    proj_l2_mut(Lambda, weights); //projection on the constraining balls
+
+    Delta = Lambda*Phi;
+    U = X + Delta;
+    V = U*Phi.transpose(); //since grad_Lambda = -V, no need for variable grad
+    primal = obj_primal(Delta, V, weights);
+    dual = obj_dual(XF2, U);
+    if(trace){
+      primal_trace(it) = primal;
+      dual_trace(it) = dual;
+    }
+
+    //calculate the step size of the next iteration
+    VectorXd dLambda = Lambda - old_Lambda;
+    VectorXd dgrad = -V - old_grad; //grad = -V
+    double d_dot_dgrad = (dgrad.transpose()*dLambda).trace();//inner product of dLambda and dgrad
+    double nv_s = - dLambda.squaredNorm()/d_dot_dgrad; //for gradient ascent, need a minus sign here
+    double nv_m = - d_dot_dgrad/dgrad.squaredNorm();
+    if(nv_s>0 && nv_m>0){ //update stepsize nv following Barzilai-Borwein, only when nv_s and nv_m are both positive
+      if(nv_m > 0.5*nv_s) nv = nv_m;
+      else nv = nv_s - 0.5*nv_m;
+    }
+
+    old_Lambda = Lambda;
+    old_grad = -V;
+    it += 1;
+  }
+  if(it == maxiter) {
+    Rcout<<"Projected dual ascent doesn't converge! Try increase maxiter."<<std::endl;
+    Rcout<<"Duality gap residual: "<<(primal - dual)<<std::endl;
+  }else{
+    Rcout<<"Projected dual ascent converged at iteration "<<it<<std::endl;
+    if(trace){
+      primal_trace.conservativeResize(it);
+      dual_trace.conservativeResize(it);
+    }
+  }
+  if(trace) return List::create(Named("U") = U, Named("V") = V, Named("Lambda") = Lambda,
+     Named("primal_trace") = primal_trace, Named("dual_trace") = dual_trace);
+  else return List::create(Named("U") = U, Named("V") = V, Named("Lambda") = Lambda);
 }
