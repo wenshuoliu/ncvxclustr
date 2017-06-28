@@ -2,6 +2,9 @@
 
 export(dual_ascent)
 export(dual_ascent_adapt)
+export(fusion_cluster)
+export(mcp)
+export(mcp_prime)
 export(weights_init)
 importFrom(Rcpp,sourceCpp)
 useDynLib(ncvxclustr)

@@ -2,7 +2,7 @@
 % Please edit documentation in R/RcppExports.R
 \name{dual_ascent}
 \alias{dual_ascent}
-\title{Sovle the projected dual ascent problem with fixed weights}
+\title{Solve the projected dual ascent problem with fixed weights}
 \usage{
 dual_ascent(X, Phi, weights, Lambda0, maxiter, eps, nv, trace)
 }
@@ -27,5 +27,5 @@ dual_ascent(X, Phi, weights, Lambda0, maxiter, eps, nv, trace)
 a list including U, V, Lambda and number of iterations to convergence
 }
 \description{
-Sovle the projected dual ascent problem with fixed weights
+Solve the projected dual ascent problem with fixed weights
 }

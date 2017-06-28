@@ -26,7 +26,7 @@ proj_l2_acc <- function(Lambda, radii) {
     .Call('ncvxclustr_proj_l2_acc', PACKAGE = 'ncvxclustr', Lambda, radii)
 }
 
-#'Sovle the projected dual ascent problem with fixed weights
+#'Solve the projected dual ascent problem with fixed weights
 #'
 #'@param X the data, with the columns being units, the rows being features
 #'@param Phi the edge incidence matrix, defined as Phi_{li} = 1 if(l_1 == i); -1 if(l_2 == i); 0 otherwise
@@ -60,5 +60,30 @@ dual_ascent <- function(X, Phi, weights, Lambda0, maxiter, eps, nv, trace) {
 #'@export
 dual_ascent_adapt <- function(X, Phi, weights, Lambda0, maxiter, eps, nv0, trace) {
     .Call('ncvxclustr_dual_ascent_adapt', PACKAGE = 'ncvxclustr', X, Phi, weights, Lambda0, maxiter, eps, nv0, trace)
+}
+
+#'@export
+mcp_prime <- function(v_norms, lambda, gamma) {
+    .Call('ncvxclustr_mcp_prime', PACKAGE = 'ncvxclustr', v_norms, lambda, gamma)
+}
+
+#'@export
+mcp <- function(v_norms, lambda, gamma) {
+    .Call('ncvxclustr_mcp', PACKAGE = 'ncvxclustr', v_norms, lambda, gamma)
+}
+
+#'Solve the fusion clustering problem with MCP penalization via MM algorithm
+#'
+#'@param X the data, with the columns being units, the rows being features
+#'@param Phi the edge incidence matrix, defined as Phi_{li} = 1 if(l_1 == i); -1 if(l_2 == i); 0 otherwise
+#'@param lambda,gamma the parameters of MCP penalty function
+#'@param maxiter maximum iterations
+#'@param tol the duality gap tolerence
+#'@param trace whether save the primal and dual values of every iteration
+#'
+#'@return a list containing the solution U, and (optional) trace information
+#'@export
+fusion_cluster <- function(X, Phi, lambda, gamma, maxiter, tol, trace) {
+    .Call('ncvxclustr_fusion_cluster', PACKAGE = 'ncvxclustr', X, Phi, lambda, gamma, maxiter, tol, trace)
 }
 

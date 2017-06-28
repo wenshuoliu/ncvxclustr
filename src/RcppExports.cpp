@@ -92,3 +92,46 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// mcp_prime
+VectorXd mcp_prime(const VectorXd v_norms, const double lambda, const double gamma);
+RcppExport SEXP ncvxclustr_mcp_prime(SEXP v_normsSEXP, SEXP lambdaSEXP, SEXP gammaSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const VectorXd >::type v_norms(v_normsSEXP);
+    Rcpp::traits::input_parameter< const double >::type lambda(lambdaSEXP);
+    Rcpp::traits::input_parameter< const double >::type gamma(gammaSEXP);
+    rcpp_result_gen = Rcpp::wrap(mcp_prime(v_norms, lambda, gamma));
+    return rcpp_result_gen;
+END_RCPP
+}
+// mcp
+double mcp(const VectorXd v_norms, const double lambda, const double gamma);
+RcppExport SEXP ncvxclustr_mcp(SEXP v_normsSEXP, SEXP lambdaSEXP, SEXP gammaSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const VectorXd >::type v_norms(v_normsSEXP);
+    Rcpp::traits::input_parameter< const double >::type lambda(lambdaSEXP);
+    Rcpp::traits::input_parameter< const double >::type gamma(gammaSEXP);
+    rcpp_result_gen = Rcpp::wrap(mcp(v_norms, lambda, gamma));
+    return rcpp_result_gen;
+END_RCPP
+}
+// fusion_cluster
+List fusion_cluster(const MatrixXd& X, const SpMat& Phi, const double lambda, const double gamma, const int maxiter, const double tol, const bool trace);
+RcppExport SEXP ncvxclustr_fusion_cluster(SEXP XSEXP, SEXP PhiSEXP, SEXP lambdaSEXP, SEXP gammaSEXP, SEXP maxiterSEXP, SEXP tolSEXP, SEXP traceSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const MatrixXd& >::type X(XSEXP);
+    Rcpp::traits::input_parameter< const SpMat& >::type Phi(PhiSEXP);
+    Rcpp::traits::input_parameter< const double >::type lambda(lambdaSEXP);
+    Rcpp::traits::input_parameter< const double >::type gamma(gammaSEXP);
+    Rcpp::traits::input_parameter< const int >::type maxiter(maxiterSEXP);
+    Rcpp::traits::input_parameter< const double >::type tol(tolSEXP);
+    Rcpp::traits::input_parameter< const bool >::type trace(traceSEXP);
+    rcpp_result_gen = Rcpp::wrap(fusion_cluster(X, Phi, lambda, gamma, maxiter, tol, trace));
+    return rcpp_result_gen;
+END_RCPP
+}

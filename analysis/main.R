@@ -6,7 +6,7 @@ library(Matrix)
 
 load("~/Codes/Rproj/cvxclustr/data/mammals.rdata")
 
-p=10;n=500;nnn=5;
+p=5;n=20;nnn=5;
 
 set.seed(123)
 Xt <- matrix(rnorm(p*n),n,p)
@@ -18,7 +18,7 @@ Phi <- init$Phi
 nEdge <- dim(Phi)[1]
 
 gk_weights <- exp(-1.0*(init$dists)^2)
-gamm <- 5000.
+gamm <- 50.
 
 Lambda0 <- matrix(rnorm(p*nEdge), p, nEdge)
 #Lambda <- proj_l2_acc(Lambda0, radii = gk_weights)
@@ -31,8 +31,10 @@ step.size <- cvxclustr::AMA_step_size(weights.cvx, n)
 res.ncvx <- dual_ascent(X, Phi, weights = gamm*gk_weights, Lambda0, maxiter = 10000, eps = 1e-2, nv = step.size, trace = TRUE)
 res.ncvx <- dual_ascent_adapt(X, Phi, weights = gamm*gk_weights, Lambda0, maxiter = 10000, eps = 1e-3, nv0 = step.size, trace = TRUE)
 
-microbenchmark(res.ncvx <- dual_ascent_adapt(X, Phi, weights = gamm*gk_weights, Lambda0, maxiter = 30000, eps = 1e-3, nv = step.size,
-                                     trace = FALSE), times = 1)
+microbenchmark(res.ncvx <- dual_ascent_adapt(X, Phi, weights = gamm*gk_weights, Lambda0, maxiter = 30000, eps = 1e-3, nv = 00.1,
+                                     trace = TRUE), times = 1)
+mm.mcp <- fusion_cluster(X, Phi, 0.5, 1.5, maxiter = 200, tol = 1e-3, trace = TRUE)
+apply(mm.mcp$V, 2, function(x){sqrt(sum(x^2))})
 
 ####output of package cvxclustr####
 res.cvx <- cvxclustr::cvxclust(X, weights.cvx, gamm, method = "ama", nu = 1/n, tol = 1e-4, max_iter = 10000,

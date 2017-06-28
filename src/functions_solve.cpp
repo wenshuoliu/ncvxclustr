@@ -155,7 +155,7 @@ void mutate(NumericMatrix & M){
   Mmap.col(0) = VectorXd::Zero(nrow);
 }
 
-//'Sovle the projected dual ascent problem with fixed weights
+//'Solve the projected dual ascent problem with fixed weights
 //'
 //'@param X the data, with the columns being units, the rows being features
 //'@param Phi the edge incidence matrix, defined as Phi_{li} = 1 if(l_1 == i); -1 if(l_2 == i); 0 otherwise
@@ -297,8 +297,8 @@ List dual_ascent_adapt(const MatrixXd & X, const SpMat & Phi, const VectorXd & w
     Rcout<<"Projected dual ascent doesn't converge! Try increase maxiter."<<std::endl;
     Rcout<<"Duality gap residual: "<<(primal - dual)<<std::endl;
   }else{
-    Rcout<<"Projected dual ascent converged at iteration "<<it<<std::endl;
     if(trace){
+      Rcout<<"Projected dual ascent converged at iteration "<<it<<std::endl;
       primal_trace.conservativeResize(it);
       dual_trace.conservativeResize(it);
     }
@@ -306,4 +306,105 @@ List dual_ascent_adapt(const MatrixXd & X, const SpMat & Phi, const VectorXd & w
   if(trace) return List::create(Named("U") = U, Named("V") = V, Named("Lambda") = Lambda,
      Named("primal_trace") = primal_trace, Named("dual_trace") = dual_trace);
   else return List::create(Named("U") = U, Named("V") = V, Named("Lambda") = Lambda);
+}
+
+//The derivartive of the MCP penalty, to be used to update weights
+//
+//Taking a vector of v_norms's, and return component-wised MCP derivative
+//'@export
+//[[Rcpp::export]]
+VectorXd mcp_prime(const VectorXd v_norms, const double lambda, const double gamma)
+{
+  int p = v_norms.size();
+  VectorXd ans = -(1/gamma)*v_norms + VectorXd::Constant(p, lambda);
+  return (ans.array() + abs(ans.array()))/2;
+}
+
+//The MCP penalty fucntion
+//
+//Taking a vector of v's, return \Sum_j(MCP(v_j))
+//'@export
+//[[Rcpp::export]]
+double mcp(const VectorXd v_norms, const double lambda, const double gamma)
+{
+  double ans = 0;
+  for(int j = 0; j < v_norms.size(); j++){
+    if(v_norms(j) < gamma*lambda) ans += lambda*v_norms(j) - v_norms(j)*v_norms(j)/2./gamma;
+    else ans += gamma*lambda*lambda/2.;
+  }
+  return ans;
+}
+
+//'Solve the fusion clustering problem with MCP penalization via MM algorithm
+//'
+//'@param X the data, with the columns being units, the rows being features
+//'@param Phi the edge incidence matrix, defined as Phi_{li} = 1 if(l_1 == i); -1 if(l_2 == i); 0 otherwise
+//'@param lambda,gamma the parameters of MCP penalty function
+//'@param maxiter maximum iterations
+//'@param tol the duality gap tolerence
+//'@param trace whether save the primal and dual values of every iteration
+//'
+//'@return a list containing the solution U, and (optional) trace information
+//'@export
+//[[Rcpp::export]]
+List fusion_cluster(const MatrixXd & X, const SpMat & Phi, const double lambda,
+                    const double gamma, const int maxiter, const double tol,
+                    const bool trace)
+{
+  int maxiter_cvx = 30000;
+  double tol_cvx = tol;
+  double nv0 = 0.1;
+  MatrixXd U_old = X;
+  MatrixXd V = U_old*Phi.transpose();
+  VectorXd v_norms = V.colwise().norm();
+  //Rcout<<"v_norms ="<<v_norms.transpose()<<std::endl;
+  VectorXd weights = mcp_prime(v_norms, lambda, gamma);
+  //Rcout<<"weights = "<<weights.transpose()<<std::endl;
+  MatrixXd Lambda0 = MatrixXd::Random(X.rows(),Phi.rows());
+  VectorXd obj_trace(maxiter);
+  VectorXd diff_trace(maxiter);
+  double obj_old = mcp(v_norms, lambda, gamma);
+  //Rcout<<"obj_init = "<<obj_old<<std::endl;
+  List cvx = dual_ascent_adapt(X, Phi, weights, Lambda0, maxiter_cvx, tol_cvx, nv0, false);
+  MatrixXd U = cvx["U"];
+  V = cvx["V"];
+  Lambda0 = cvx["Lambda"];
+  v_norms = V.colwise().norm();
+  //Rcout<<"v_norm1 = "<<v_norms.transpose()<<std::endl;
+  double obj = 0.5*(X-U).squaredNorm() + mcp(v_norms, lambda, gamma);
+  //Rcout<<"obj = "<<obj<<std::endl;
+  int it = 0;
+  while((obj_old - obj) > tol && it < maxiter){
+    if(trace){
+      obj_trace(it) = obj_old;
+      diff_trace(it) = (U-U_old).norm();
+    }
+    obj_old = obj;
+    U_old = U;
+    weights = mcp_prime(v_norms, lambda, gamma);
+    //Rcout<<"new weights = "<<weights.transpose()<<std::endl;
+    cvx = dual_ascent_adapt(X, Phi, weights, Lambda0, maxiter_cvx, tol_cvx, nv0, false);
+    U = cvx["U"];
+    V = cvx["V"];
+    Lambda0 = cvx["Lambda"];
+    v_norms = V.colwise().norm();
+    obj = 0.5*(X-U).squaredNorm() + mcp(v_norms, lambda, gamma);
+    //Rcout<<"new obj = "<<obj<<std::endl;
+    it++;
+  }
+  if(it == maxiter){
+    Rcout<<"MM algorithm doesn't converge! Try increase maxiter."<<std::endl;
+  }else{
+    if(trace){
+      Rcout<<"MM algorithm converges at iteration "<<it<<std::endl;
+      obj_trace.conservativeResize(it);
+      diff_trace.conservativeResize(it);
+    }
+  }
+  if(trace){
+    return List::create(Named("U") = U, Named("V") = V, Named("obj_trace") = obj_trace,
+                        Named("diff_trace") = diff_trace);
+  }else{
+    return List::create(Named("U") = U, Named("V") = V);
+  }
 }
