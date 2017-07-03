@@ -75,15 +75,16 @@ mcp <- function(v_norms, lambda, gamma) {
 #'Solve the fusion clustering problem with MCP penalization via MM algorithm
 #'
 #'@param X the data, with the columns being units, the rows being features
+#'@param U0 the initial guess of the centroid matrix U
 #'@param Phi the edge incidence matrix, defined as Phi_{li} = 1 if(l_1 == i); -1 if(l_2 == i); 0 otherwise
 #'@param lambda,gamma the parameters of MCP penalty function
 #'@param maxiter maximum iterations
 #'@param tol the duality gap tolerence
 #'@param trace whether save the primal and dual values of every iteration
 #'
-#'@return a list containing the solution U, and (optional) trace information
+#'@return a list containing the solution U, V, and (optional) trace information
 #'@export
-fusion_cluster <- function(X, Phi, lambda, gamma, maxiter, tol, trace) {
-    .Call('ncvxclustr_fusion_cluster', PACKAGE = 'ncvxclustr', X, Phi, lambda, gamma, maxiter, tol, trace)
+fusion_cluster <- function(X, U0, Phi, lambda, gamma, maxiter_mm, maxiter_cvx, tol, trace) {
+    .Call('ncvxclustr_fusion_cluster', PACKAGE = 'ncvxclustr', X, U0, Phi, lambda, gamma, maxiter_mm, maxiter_cvx, tol, trace)
 }
 

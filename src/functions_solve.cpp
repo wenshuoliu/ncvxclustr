@@ -338,34 +338,34 @@ double mcp(const VectorXd v_norms, const double lambda, const double gamma)
 //'Solve the fusion clustering problem with MCP penalization via MM algorithm
 //'
 //'@param X the data, with the columns being units, the rows being features
+//'@param U0 the initial guess of the centroid matrix U
 //'@param Phi the edge incidence matrix, defined as Phi_{li} = 1 if(l_1 == i); -1 if(l_2 == i); 0 otherwise
 //'@param lambda,gamma the parameters of MCP penalty function
 //'@param maxiter maximum iterations
 //'@param tol the duality gap tolerence
 //'@param trace whether save the primal and dual values of every iteration
 //'
-//'@return a list containing the solution U, and (optional) trace information
+//'@return a list containing the solution U, V, and (optional) trace information
 //'@export
 //[[Rcpp::export]]
-List fusion_cluster(const MatrixXd & X, const SpMat & Phi, const double lambda,
-                    const double gamma, const int maxiter, const double tol,
-                    const bool trace)
+List fusion_cluster(const MatrixXd & X, const MatrixXd & U0, const SpMat & Phi,
+                    const double lambda, const double gamma, const int maxiter_mm,
+                    const int maxiter_cvx, const double tol, const bool trace)
 {
-  int maxiter_cvx = 30000;
   double tol_cvx = tol;
   double nv0 = 0.1;
-  MatrixXd U_old = X;
+  MatrixXd U_old = U0;
   MatrixXd V = U_old*Phi.transpose();
   VectorXd v_norms = V.colwise().norm();
   //Rcout<<"v_norms ="<<v_norms.transpose()<<std::endl;
   VectorXd weights = mcp_prime(v_norms, lambda, gamma);
   //Rcout<<"weights = "<<weights.transpose()<<std::endl;
   MatrixXd Lambda0 = MatrixXd::Random(X.rows(),Phi.rows());
-  VectorXd obj_trace(maxiter);
-  VectorXd diff_trace(maxiter);
+  VectorXd obj_trace(maxiter_mm);
+  VectorXd diff_trace(maxiter_mm);
   double obj_old = mcp(v_norms, lambda, gamma);
   //Rcout<<"obj_init = "<<obj_old<<std::endl;
-  List cvx = dual_ascent_adapt(X, Phi, weights, Lambda0, maxiter_cvx, tol_cvx, nv0, false);
+  List cvx = dual_ascent_adapt(X, Phi, weights, Lambda0, maxiter_cvx, tol_cvx, nv0, trace);
   MatrixXd U = cvx["U"];
   V = cvx["V"];
   Lambda0 = cvx["Lambda"];
@@ -374,7 +374,7 @@ List fusion_cluster(const MatrixXd & X, const SpMat & Phi, const double lambda,
   double obj = 0.5*(X-U).squaredNorm() + mcp(v_norms, lambda, gamma);
   //Rcout<<"obj = "<<obj<<std::endl;
   int it = 0;
-  while((obj_old - obj) > tol && it < maxiter){
+  while((obj_old - obj) > tol && it < maxiter_mm){
     if(trace){
       obj_trace(it) = obj_old;
       diff_trace(it) = (U-U_old).norm();
@@ -383,7 +383,7 @@ List fusion_cluster(const MatrixXd & X, const SpMat & Phi, const double lambda,
     U_old = U;
     weights = mcp_prime(v_norms, lambda, gamma);
     //Rcout<<"new weights = "<<weights.transpose()<<std::endl;
-    cvx = dual_ascent_adapt(X, Phi, weights, Lambda0, maxiter_cvx, tol_cvx, nv0, false);
+    cvx = dual_ascent_adapt(X, Phi, weights, Lambda0, maxiter_cvx, tol_cvx, nv0, trace);
     U = cvx["U"];
     V = cvx["V"];
     Lambda0 = cvx["Lambda"];
@@ -392,7 +392,7 @@ List fusion_cluster(const MatrixXd & X, const SpMat & Phi, const double lambda,
     //Rcout<<"new obj = "<<obj<<std::endl;
     it++;
   }
-  if(it == maxiter){
+  if(it == maxiter_mm){
     Rcout<<"MM algorithm doesn't converge! Try increase maxiter."<<std::endl;
   }else{
     if(trace){

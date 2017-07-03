@@ -4,23 +4,25 @@
 \alias{fusion_cluster}
 \title{Solve the fusion clustering problem with MCP penalization via MM algorithm}
 \usage{
-fusion_cluster(X, Phi, lambda, gamma, maxiter, tol, trace)
+fusion_cluster(X, U0, Phi, lambda, gamma, maxiter_mm, maxiter_cvx, tol, trace)
 }
 \arguments{
 \item{X}{the data, with the columns being units, the rows being features}
+
+\item{U0}{the initial guess of the centroid matrix U}
 
 \item{Phi}{the edge incidence matrix, defined as Phi_{li} = 1 if(l_1 == i); -1 if(l_2 == i); 0 otherwise}
 
 \item{lambda, gamma}{the parameters of MCP penalty function}
 
-\item{maxiter}{maximum iterations}
-
 \item{tol}{the duality gap tolerence}
 
 \item{trace}{whether save the primal and dual values of every iteration}
+
+\item{maxiter}{maximum iterations}
 }
 \value{
-a list containing the solution U, and (optional) trace information
+a list containing the solution U, V, and (optional) trace information
 }
 \description{
 Solve the fusion clustering problem with MCP penalization via MM algorithm
