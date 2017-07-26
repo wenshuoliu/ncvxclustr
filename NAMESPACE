@@ -2,6 +2,7 @@
 
 export(dual_ascent)
 export(dual_ascent_adapt)
+export(dual_ascent_fasta)
 export(fusion_cluster)
 export(fusion_cluster_path)
 export(mcp)

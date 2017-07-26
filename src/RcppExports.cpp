@@ -92,6 +92,24 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// dual_ascent_fasta
+List dual_ascent_fasta(const MatrixXd& X, const SpMat& Phi, const VectorXd& weights, const MatrixXd Lambda0, int maxiter, double eps, double nv0, bool trace);
+RcppExport SEXP ncvxclustr_dual_ascent_fasta(SEXP XSEXP, SEXP PhiSEXP, SEXP weightsSEXP, SEXP Lambda0SEXP, SEXP maxiterSEXP, SEXP epsSEXP, SEXP nv0SEXP, SEXP traceSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const MatrixXd& >::type X(XSEXP);
+    Rcpp::traits::input_parameter< const SpMat& >::type Phi(PhiSEXP);
+    Rcpp::traits::input_parameter< const VectorXd& >::type weights(weightsSEXP);
+    Rcpp::traits::input_parameter< const MatrixXd >::type Lambda0(Lambda0SEXP);
+    Rcpp::traits::input_parameter< int >::type maxiter(maxiterSEXP);
+    Rcpp::traits::input_parameter< double >::type eps(epsSEXP);
+    Rcpp::traits::input_parameter< double >::type nv0(nv0SEXP);
+    Rcpp::traits::input_parameter< bool >::type trace(traceSEXP);
+    rcpp_result_gen = Rcpp::wrap(dual_ascent_fasta(X, Phi, weights, Lambda0, maxiter, eps, nv0, trace));
+    return rcpp_result_gen;
+END_RCPP
+}
 // mcp_prime
 VectorXd mcp_prime(const VectorXd v_norms, const double lambda, const double gamma);
 RcppExport SEXP ncvxclustr_mcp_prime(SEXP v_normsSEXP, SEXP lambdaSEXP, SEXP gammaSEXP) {
@@ -136,4 +154,23 @@ BEGIN_RCPP
     rcpp_result_gen = Rcpp::wrap(fusion_cluster(X, U0, Phi, lambda, gamma, maxiter_mm, maxiter_cvx, tol, trace));
     return rcpp_result_gen;
 END_RCPP
+}
+
+static const R_CallMethodDef CallEntries[] = {
+    {"ncvxclustr_weights_init", (DL_FUNC) &ncvxclustr_weights_init, 2},
+    {"ncvxclustr_obj_dual", (DL_FUNC) &ncvxclustr_obj_dual, 2},
+    {"ncvxclustr_obj_primal", (DL_FUNC) &ncvxclustr_obj_primal, 3},
+    {"ncvxclustr_proj_l2_acc", (DL_FUNC) &ncvxclustr_proj_l2_acc, 2},
+    {"ncvxclustr_dual_ascent", (DL_FUNC) &ncvxclustr_dual_ascent, 8},
+    {"ncvxclustr_dual_ascent_adapt", (DL_FUNC) &ncvxclustr_dual_ascent_adapt, 8},
+    {"ncvxclustr_dual_ascent_fasta", (DL_FUNC) &ncvxclustr_dual_ascent_fasta, 8},
+    {"ncvxclustr_mcp_prime", (DL_FUNC) &ncvxclustr_mcp_prime, 3},
+    {"ncvxclustr_mcp", (DL_FUNC) &ncvxclustr_mcp, 3},
+    {"ncvxclustr_fusion_cluster", (DL_FUNC) &ncvxclustr_fusion_cluster, 9},
+    {NULL, NULL, 0}
+};
+
+RcppExport void R_init_ncvxclustr(DllInfo *dll) {
+    R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
+    R_useDynamicSymbols(dll, FALSE);
 }

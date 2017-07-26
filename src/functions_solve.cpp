@@ -279,8 +279,8 @@ List dual_ascent_adapt(const MatrixXd & X, const SpMat & Phi, const VectorXd & w
     }
 
     //calculate the step size of the next iteration
-    VectorXd dLambda = Lambda - old_Lambda;
-    VectorXd dgrad = -V - old_grad; //grad = -V
+    MatrixXd dLambda = Lambda - old_Lambda;
+    MatrixXd dgrad = -V - old_grad; //grad = -V
     double d_dot_dgrad = (dgrad.transpose()*dLambda).trace();//inner product of dLambda and dgrad
     double nv_s = - dLambda.squaredNorm()/d_dot_dgrad; //for gradient ascent, need a minus sign here
     double nv_m = - d_dot_dgrad/dgrad.squaredNorm();
@@ -292,6 +292,114 @@ List dual_ascent_adapt(const MatrixXd & X, const SpMat & Phi, const VectorXd & w
     old_Lambda = Lambda;
     old_grad = -V;
     it += 1;
+  }
+  if(it == maxiter) {
+    Rcout<<"Projected dual ascent doesn't converge! Try increase maxiter."<<std::endl;
+    Rcout<<"Duality gap residual: "<<(primal - dual)<<std::endl;
+  }else{
+    if(trace){
+      Rcout<<"Projected dual ascent converged at iteration "<<it<<std::endl;
+      primal_trace.conservativeResize(it);
+      dual_trace.conservativeResize(it);
+    }
+  }
+  if(trace) return List::create(Named("U") = U, Named("V") = V, Named("Lambda") = Lambda,
+     Named("primal_trace") = primal_trace, Named("dual_trace") = dual_trace);
+  else return List::create(Named("U") = U, Named("V") = V, Named("Lambda") = Lambda);
+}
+
+//'Solve the projected dual ascent problem with fixed weights and adaptive step size and back-tracking
+//'
+//'@param X the data, with the columns being units, the rows being features
+//'@param Phi the edge incidence matrix, defined as Phi_{li} = 1 if(l_1 == i); -1 if(l_2 == i); 0 otherwise
+//'@param weights the non-zero weights in a vector
+//'@param Lambda0 the initial guess of Lambda
+//'@param maxiter maximum iterations
+//'@param eps the duality gap tolerence
+//'@param nv initial step size
+//'@param trace whether save the primal and dual values of every iteration
+//'
+//'@return a list including U, V, Lambda and number of iterations to convergence
+//'
+//'@export
+//[[Rcpp::export]]
+List dual_ascent_fasta(const MatrixXd & X, const SpMat & Phi, const VectorXd & weights,
+                       const MatrixXd Lambda0, int maxiter, double eps, double nv0,
+                       bool trace){
+  int M = 10; //for backtracking
+  double XF2 = X.squaredNorm(); //avoid repeatedly doing this calculation
+  MatrixXd Delta = Lambda0*Phi;
+  MatrixXd U = X + Delta;
+  MatrixXd V = U*Phi.transpose();
+  double dual = obj_dual(XF2, U);
+  double primal = obj_primal(Delta, V, weights);
+  MatrixXd Lambda(Lambda0.cols(), Lambda0.rows());
+  //MatrixXd grad(Lambda0.cols(), Lambda0.rows()); //initialize gradient of Lambda with its dimension
+  MatrixXd old_Lambda = Lambda0;
+  MatrixXd old_grad = -V; //initialize two variable to track the last iteration
+  int it = 0;
+  VectorXd primal_trace(maxiter);
+  VectorXd dual_trace(maxiter);
+  primal_trace(it) = primal;
+  dual_trace(it) = dual;
+  double nv = nv0;
+
+  while((primal - dual) > eps && it < maxiter){
+    //Rcout<<"it = "<<it<<"; gap = "<<primal-dual<<"; p="<<primal<<"; d="<<dual<<std::endl;
+    it++;
+
+    Lambda = old_Lambda + nv*old_grad; //gradient ascent
+    proj_l2_mut(Lambda, weights); //projection on the constraining balls
+
+    Delta = Lambda*Phi;
+    U = X + Delta;
+    dual = obj_dual(XF2, U); //step candidate
+
+    //backtracking line search
+    double f_hat = -dual_trace(it-1); //f_hat is defined in the fasta paper page15;notice the minus sign for grad ascent
+    for(int i=2; i<=(it>M?M:it); i++){
+      if(f_hat < -dual_trace(it - i))
+        f_hat = -dual_trace(it - i);
+    }
+    double lhs = -dual - 1e-12;
+    MatrixXd dLambda = Lambda - old_Lambda;
+    double rhs = f_hat - (dLambda.transpose()*old_grad).trace() + (0.5/nv)*dLambda.squaredNorm();
+
+    int back_it = 0;
+    while(lhs > rhs && back_it <= 20){
+      //Rcout<<"back_it = "<<back_it<<"; nv="<<nv<<std::endl;
+      nv = nv*0.5;
+      Lambda = old_Lambda + nv*old_grad;
+      proj_l2_mut(Lambda, weights);
+      Delta = Lambda*Phi;
+      U = X + Delta;
+      dual = obj_dual(XF2, U);
+      lhs = -dual - 1e-12;
+      dLambda = Lambda - old_Lambda;
+      rhs = f_hat + (dLambda.transpose()*old_grad).trace() + (0.5/nv)*dLambda.squaredNorm();
+      back_it++;
+    }
+
+    if(back_it==20) Rcout<<"Back tracking didn't converge!"<<std::endl;
+
+    V = U*Phi.transpose(); //since grad_Lambda = -V, no need for variable grad
+    primal = obj_primal(Delta, V, weights);
+    primal_trace(it) = primal;
+    dual_trace(it) = dual;
+
+    //calculate the step size of the next iteration
+    //MatrixXd dLambda = Lambda - old_Lambda;
+    MatrixXd dgrad = -V - old_grad; //grad = -V
+    double d_dot_dgrad = (dgrad.transpose()*dLambda).trace();//inner product of dLambda and dgrad
+    double nv_s = - dLambda.squaredNorm()/d_dot_dgrad; //for gradient ascent, need a minus sign here
+    double nv_m = - d_dot_dgrad/dgrad.squaredNorm();
+    if(nv_s>0 && nv_m>0){ //update stepsize nv following Barzilai-Borwein, only when nv_s and nv_m are both positive
+      if(nv_m > 0.5*nv_s) nv = nv_m;
+      else nv = nv_s - 0.5*nv_m;
+    }
+
+    old_Lambda = Lambda;
+    old_grad = -V;
   }
   if(it == maxiter) {
     Rcout<<"Projected dual ascent doesn't converge! Try increase maxiter."<<std::endl;
@@ -365,7 +473,7 @@ List fusion_cluster(const MatrixXd & X, const MatrixXd & U0, const SpMat & Phi,
   VectorXd diff_trace(maxiter_mm);
   double obj_old = mcp(v_norms, lambda, gamma);
   //Rcout<<"obj_init = "<<obj_old<<std::endl;
-  List cvx = dual_ascent_adapt(X, Phi, weights, Lambda0, maxiter_cvx, tol_cvx, nv0, trace);
+  List cvx = dual_ascent_fasta(X, Phi, weights, Lambda0, maxiter_cvx, tol_cvx, nv0, trace);
   MatrixXd U = cvx["U"];
   V = cvx["V"];
   Lambda0 = cvx["Lambda"];
@@ -383,7 +491,7 @@ List fusion_cluster(const MatrixXd & X, const MatrixXd & U0, const SpMat & Phi,
     U_old = U;
     weights = mcp_prime(v_norms, lambda, gamma);
     //Rcout<<"new weights = "<<weights.transpose()<<std::endl;
-    cvx = dual_ascent_adapt(X, Phi, weights, Lambda0, maxiter_cvx, tol_cvx, nv0, trace);
+    cvx = dual_ascent_fasta(X, Phi, weights, Lambda0, maxiter_cvx, tol_cvx, nv0, trace);
     U = cvx["U"];
     V = cvx["V"];
     Lambda0 = cvx["Lambda"];

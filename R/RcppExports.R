@@ -62,6 +62,24 @@ dual_ascent_adapt <- function(X, Phi, weights, Lambda0, maxiter, eps, nv0, trace
     .Call('ncvxclustr_dual_ascent_adapt', PACKAGE = 'ncvxclustr', X, Phi, weights, Lambda0, maxiter, eps, nv0, trace)
 }
 
+#'Solve the projected dual ascent problem with fixed weights and adaptive step size and back-tracking
+#'
+#'@param X the data, with the columns being units, the rows being features
+#'@param Phi the edge incidence matrix, defined as Phi_{li} = 1 if(l_1 == i); -1 if(l_2 == i); 0 otherwise
+#'@param weights the non-zero weights in a vector
+#'@param Lambda0 the initial guess of Lambda
+#'@param maxiter maximum iterations
+#'@param eps the duality gap tolerence
+#'@param nv initial step size
+#'@param trace whether save the primal and dual values of every iteration
+#'
+#'@return a list including U, V, Lambda and number of iterations to convergence
+#'
+#'@export
+dual_ascent_fasta <- function(X, Phi, weights, Lambda0, maxiter, eps, nv0, trace) {
+    .Call('ncvxclustr_dual_ascent_fasta', PACKAGE = 'ncvxclustr', X, Phi, weights, Lambda0, maxiter, eps, nv0, trace)
+}
+
 #'@export
 mcp_prime <- function(v_norms, lambda, gamma) {
     .Call('ncvxclustr_mcp_prime', PACKAGE = 'ncvxclustr', v_norms, lambda, gamma)

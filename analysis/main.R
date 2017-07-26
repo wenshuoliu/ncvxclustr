@@ -6,7 +6,7 @@ library(Matrix)
 
 load("~/Codes/Rproj/cvxclustr/data/mammals.rdata")
 
-p=2;n=200;nnn=5;
+p=2;n=100;nnn=5;
 
 set.seed(123)
 Xt <- matrix(rnorm(p*n),n,p)
@@ -18,7 +18,7 @@ Phi <- init$Phi
 nEdge <- dim(Phi)[1]
 
 gk_weights <- exp(-1.0*(init$dists)^2)
-gamm <- 50.
+gamm <- 5.
 
 Lambda0 <- matrix(rnorm(p*nEdge), p, nEdge)
 #Lambda <- proj_l2_acc(Lambda0, radii = gk_weights)
@@ -29,11 +29,13 @@ weights.cvx <- cvxclustr::knn_weights(weights.cvx, nnn, n)
 step.size <- cvxclustr::AMA_step_size(weights.cvx, n)
 
 res.ncvx <- dual_ascent(X, Phi, weights = gamm*gk_weights, Lambda0, maxiter = 10000, eps = 1e-2, nv = step.size, trace = TRUE)
-res.ncvx <- dual_ascent_adapt(X, Phi, weights = gamm*gk_weights, Lambda0, maxiter = 10000, eps = 1e-3, nv0 = step.size, trace = TRUE)
+res.ncvx <- dual_ascent_adapt(X, Phi, weights = gamm*gk_weights, Lambda0, maxiter = 10000, eps = 1e-2, nv0 = step.size, trace = TRUE)
+res.fasta <- dual_ascent_fasta(X, Phi, weights = gamm*gk_weights, Lambda0, maxiter = 200, eps = 1e-2, nv0 = step.size, trace = TRUE)
 
-microbenchmark(res.ncvx <- dual_ascent_adapt(X, Phi, weights = gamm*gk_weights, Lambda0, maxiter = 30000, eps = 1e-3, nv = 00.1,
+microbenchmark(res.ncvx <- dual_ascent_adapt(X, Phi, weights = gamm*gk_weights, Lambda0, maxiter = 10000, eps = 1e-3, nv0 = step.size,
                                      trace = TRUE), times = 1)
-
+microbenchmark(res.fasta <- dual_ascent_fasta(X, Phi, weights = gamm*gk_weights, Lambda0, maxiter = 10000, eps = 1e-3, nv0 = step.size,
+                                             trace = TRUE), times = 1)
 # testing of the ncvx clustering with MCP penalty ----
 gamma <- 1.0
 maxiter.cvx <- 30000
@@ -43,7 +45,7 @@ mm <- fusion_cluster(X, X, Phi, 5.8, gamma, maxiter_mm = maxiter.mm, maxiter_cvx
 v.end <- apply(mm$V, 2, function(x){sqrt(sum(x^2))})
 max(v.end)
 
-lambda <- seq(min(init$dists), 5.8, length.out = 40)
+lambda <- seq(min(init$dists), 3., length.out = 40)
 microbenchmark(path <- fusion_cluster_path(X, lambda, gamma, nnn, tol.nn = 0., maxiter.mm, maxiter.cvx,
                             tol = 1e-3), times = 1)
 plot_path(X, path)
